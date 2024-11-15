@@ -33,13 +33,15 @@ async function createFile(id: string) {
       path.join(workspaceFolder.fsPath, `PhotoID-${id}.txt`)
     );
 
-    const helloWorldContent = Buffer.from("Hello World");
-
     try {
+      await vscode.workspace.fs.stat(newFileUri);
+      vscode.window.showInformationMessage(
+        `File "PhotoID-${id}.txt" already exists.`
+      );
+    } catch (error) {
+      const helloWorldContent = Buffer.from("Hello World");
       await vscode.workspace.fs.writeFile(newFileUri, helloWorldContent);
       vscode.window.showInformationMessage(`File created: PhotoID-${id}.txt`);
-    } catch (error) {
-      vscode.window.showErrorMessage(`Failed to create file: ${error}`);
     }
   } else {
     vscode.window.showErrorMessage(

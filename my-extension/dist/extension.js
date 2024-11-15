@@ -41,18 +41,41 @@ function activate(context) {
     jsonProvider.refreshJson();
     context.subscriptions.push(disposable);
 }
+// async function createFile(id: string) {
+//   if (
+//     vscode.workspace.workspaceFolders &&
+//     vscode.workspace.workspaceFolders.length > 0
+//   ) {
+//     const workspaceFolder = vscode.workspace.workspaceFolders[0].uri;
+//     const newFileUri = vscode.Uri.file(
+//       path.join(workspaceFolder.fsPath, `PhotoID-${id}.txt`)
+//     );
+//     const helloWorldContent = Buffer.from("Hello World");
+//     try {
+//       await vscode.workspace.fs.writeFile(newFileUri, helloWorldContent);
+//       vscode.window.showInformationMessage(`File created: PhotoID-${id}.txt`);
+//     } catch (error) {
+//       vscode.window.showErrorMessage(`Failed to create file: ${error}`);
+//     }
+//   } else {
+//     vscode.window.showErrorMessage(
+//       "Open a workspace or folder in VS Code first."
+//     );
+//   }
+// }
 async function createFile(id) {
     if (vscode.workspace.workspaceFolders &&
         vscode.workspace.workspaceFolders.length > 0) {
         const workspaceFolder = vscode.workspace.workspaceFolders[0].uri;
         const newFileUri = vscode.Uri.file(path.join(workspaceFolder.fsPath, `PhotoID-${id}.txt`));
-        const helloWorldContent = Buffer.from("Hello World");
         try {
-            await vscode.workspace.fs.writeFile(newFileUri, helloWorldContent);
-            vscode.window.showInformationMessage(`File created: PhotoID-${id}.txt`);
+            await vscode.workspace.fs.stat(newFileUri);
+            vscode.window.showInformationMessage(`File "PhotoID-${id}.txt" already exists.`);
         }
         catch (error) {
-            vscode.window.showErrorMessage(`Failed to create file: ${error}`);
+            const helloWorldContent = Buffer.from("Hello World");
+            await vscode.workspace.fs.writeFile(newFileUri, helloWorldContent);
+            vscode.window.showInformationMessage(`File created: PhotoID-${id}.txt`);
         }
     }
     else {
