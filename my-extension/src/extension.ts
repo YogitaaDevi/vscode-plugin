@@ -1,124 +1,122 @@
 import * as vscode from "vscode";
 import * as https from "https";
+import * as path from "path";
 
 export function activate(context: vscode.ExtensionContext) {
-  console.log('Extension "my-extension" is now active!');
+  console.log('Congratulations, your extension "my-extension" is now active!');
 
-  // Register the webview view provider
-  const sidebarProvider = new CustomSidebarProvider(context);
-  context.subscriptions.push(
-    vscode.window.registerWebviewViewProvider("myView", sidebarProvider)
+  const disposable = vscode.commands.registerCommand(
+    "my-extension.helloWorld",
+    () => {
+      vscode.window.showInformationMessage("Hello World from my-extension!");
+    }
   );
 
-  // Trigger the API call immediately on activation
-  sidebarProvider.loadContent();
+  const jsonProvider = new JsonProvider();
+  vscode.window.registerTreeDataProvider("myView", jsonProvider);
+
+  vscode.commands.registerCommand("my-extension.createFile", (id: string) => {
+    createFile(id);
+  });
+
+  jsonProvider.refreshJson();
+  context.subscriptions.push(disposable);
 }
 
-class CustomSidebarProvider implements vscode.WebviewViewProvider {
-  private view?: vscode.WebviewView;
+async function createFile(id: string) {
+  if (
+    vscode.workspace.workspaceFolders &&
+    vscode.workspace.workspaceFolders.length > 0
+  ) {
+    const workspaceFolder = vscode.workspace.workspaceFolders[0].uri;
+    const newFileUri = vscode.Uri.file(
+      path.join(workspaceFolder.fsPath, `PhotoID-${id}.txt`)
+    );
 
-  constructor(private readonly context: vscode.ExtensionContext) {}
+    const helloWorldContent = Buffer.from("Hello World");
 
-  resolveWebviewView(view: vscode.WebviewView) {
-    console.log("Webview is being resolved");
-
-    this.view = view;
-    view.webview.options = { enableScripts: true };
-
-    // If view is not initialized, call loadContent
-    if (!this.view.webview.html) {
-      this.loadContent();
+    try {
+      await vscode.workspace.fs.writeFile(newFileUri, helloWorldContent);
+      vscode.window.showInformationMessage(`File created: PhotoID-${id}.txt`);
+    } catch (error) {
+      vscode.window.showErrorMessage(`Failed to create file: ${error}`);
     }
-  }
-
-  // Function to fetch and load content
-  public loadContent() {
-    console.log("Fetching data from API...");  // Debugging log
-
-    https.get("https://jsonplaceholder.typicode.com/photos", (res) => {
-      let data = "";
-
-      res.on("data", (chunk) => {
-        data += chunk;
-      });
-
-      res.on("end", () => {
-        try {
-          const jsonData = JSON.parse(data);
-          console.log("Data fetched:", jsonData); // Debug log
-
-          const htmlContent = `
-            <html>
-              <head>
-                <style>
-                  body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
-                  .container { padding: 10px; }
-                  .item { margin-bottom: 10px; border-bottom: 1px solid #ccc; padding-bottom: 10px; }
-                  .item img { max-width: 100%; border-radius: 5px; }
-                  .item .title { font-size: 16px; font-weight: bold; margin-top: 5px; }
-                  .item .description { font-size: 14px; color: #555; }
-                  .item button { margin-top: 5px; }
-                </style>
-              </head>
-              <body>
-                <div class="container">
-                  ${jsonData
-                    .map(
-                      (item: any) => `
-                    <div class="item">
-                      <img src="${item.thumbnailUrl}" alt="${item.title}" />
-                      <div class="title">${item.title}</div>
-                      <div class="description">${item.id}</div>
-                      <button onclick="createFile('${item.id}')">Create File</button>
-                    </div>`
-                    )
-                    .join("")}
-                </div>
-                <script>
-                  const vscode = acquireVsCodeApi();
-                  function createFile(id) {
-                    vscode.postMessage({ command: "createFile", id });
-                  }
-                </script>
-              </body>
-            </html>`;
-
-          // Ensure that the view exists before setting content
-          if (this.view) {
-            console.log("Setting webview HTML content");
-            this.view.webview.html = htmlContent; // Set the content to webview
-          }
-
-          if (this.view) {
-            this.view.webview.onDidReceiveMessage((message) => {
-              if (message.command === "createFile") {
-                this.createFile(message.id);
-              }
-            });
-          }
-        } catch (error) {
-          console.error("Failed to load data:", error);
-        }
-      });
-    });
-  }
-
-  // Create a file in the workspace based on the clicked item ID
-  private async createFile(id: string) {
-    const workspaceFolders = vscode.workspace.workspaceFolders;
-    if (workspaceFolders) {
-      const filePath = vscode.Uri.joinPath(
-        workspaceFolders[0].uri,
-        `PhotoID-${id}.txt`
-      );
-      await vscode.workspace.fs.writeFile(filePath, Buffer.from("Hello World"));
-      vscode.window.showInformationMessage(`File created: ${filePath.path}`);
-    } else {
-      vscode.window.showErrorMessage(
-        "Open a workspace or folder to create files."
-      );
-    }
+  } else {
+    vscode.window.showErrorMessage(
+      "Open a workspace or folder in VS Code first."
+    );
   }
 }
 
 export function deactivate() {}
+
+class JsonProvider implements vscode.TreeDataProvider<JsonItem> {
+  private _onDidChangeTreeData: vscode.EventEmitter<
+    JsonItem | undefined | void
+  > = new vscode.EventEmitter<JsonItem | undefined | void>();
+  readonly onDidChangeTreeData: vscode.Event<JsonItem | undefined | void> =
+    this._onDidChangeTreeData.event;
+
+  private jsonItems: JsonItem[] = [];
+
+  refreshJson() {
+    https
+      .get("https://jsonplaceholder.typicode.com/photos", (res) => {
+        let data = "";
+
+        res.on("data", (chunk) => {
+          data += chunk;
+        });
+
+        res.on("end", () => {
+          try {
+            const jsonData = JSON.parse(data);
+
+            this.jsonItems = jsonData.map((item: any) => {
+              return new JsonItem(
+                `Photo ID: ${item.id}`,
+                item.url,
+                item.title,
+                item.id.toString()
+              );
+            });
+
+            this._onDidChangeTreeData.fire();
+          } catch (error) {
+            console.error("Failed to parse API response:", error);
+          }
+        });
+      })
+      .on("error", (error) => {
+        console.error("API request error:", error);
+      });
+  }
+
+  getTreeItem(element: JsonItem): vscode.TreeItem {
+    return element;
+  }
+
+  getChildren(): JsonItem[] {
+    return this.jsonItems;
+  }
+}
+
+class JsonItem extends vscode.TreeItem {
+  constructor(
+    public readonly title: string,
+    public readonly url: string,
+    public readonly description: string,
+    public readonly id: string
+  ) {
+    super(title, vscode.TreeItemCollapsibleState.None);
+    this.tooltip = title;
+    this.description = description;
+    this.iconPath = vscode.Uri.parse(url);
+
+    this.command = {
+      command: "my-extension.createFile",
+      title: "Create File",
+      arguments: [this.id],
+    };
+  }
+}
