@@ -9,34 +9,81 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [
-    "onView: myView"
-  ],
+  "activationEvents": [],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "my-extension.helloWorld",
-        "title": "Hello World"
+        "command": "my-extension.showList",
+        "title": "Show Styled List"
+      },
+      {
+        "command": "my-extension.refreshList",
+        "title": "Refresh List",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "my-extension.createFile",
+        "title": "Create File",
+        "icon": "$(new-file)"
       }
     ],
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "myExtensionView",
-          "title": "My Extension",
+          "id": "card-list-sidebar",
+          "title": "Card List",
           "icon": "resource/circle-heat-svgrepo-com.svg"
         }
       ]
     },
     "views": {
-      "myExtensionView": [
+      "card-list-sidebar": [
         {
-          "id": "myView",
-          "name": "JSON Data"
+          "type": "webview",
+          "id": "cardList",
+          "name": "Card List",
+          "icon": "$(list-tree)",
+          "contextualTitle": "Card List"
         }
       ]
-    }
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "my-extension.refreshList",
+          "when": "view == styledList",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "my-extension.createFile",
+          "when": "viewItem == customListItem",
+          "group": "inline"
+        }
+      ]
+    },
+    "colors": [
+      {
+        "id": "myExtension.listItemBackground",
+        "description": "Background color for the list items",
+        "defaults": {
+          "dark": "#2D2D2D",
+          "light": "#FFFFFF",
+          "highContrast": "#000000"
+        }
+      },
+      {
+        "id": "myExtension.listItemHoverBackground",
+        "description": "Background color for list items when hovered",
+        "defaults": {
+          "dark": "#3D3D3D",
+          "light": "#F0F0F0",
+          "highContrast": "#FFFFFF"
+        }
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run package",
