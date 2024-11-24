@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Component Library</title>
+    <link href="{{styleUri}}" rel="stylesheet" />
+  </head>
+  <body>
+    <div class="header">
+      <h1>Component Library</h1>
+    </div>
+    <div class="search-container">
+      <input
+        type="text"
+        class="search-input"
+        placeholder="Search for a component"
+      />
+      <svg
+        class="search-icon"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <circle cx="11" cy="11" r="7"></circle>
+        <path d="M21 21l-4.35-4.35"></path>
+      </svg>
+    </div>
+    <div id="loading">Loading components...</div>
+    <div id="component-list" class="component-list"></div>
+    <script src="{{scriptUri}}"></script>
+  </body>
+</html>
