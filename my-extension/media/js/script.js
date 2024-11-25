@@ -12,8 +12,6 @@ document.querySelector(".search-input").addEventListener("input", (e) => {
 
 window.addEventListener("message", (event) => {
   const message = event.data;
-  console.log("Received message:", message);
-
   switch (message.type) {
     case "updatePosts":
       loadingElement.style.display = "none";
